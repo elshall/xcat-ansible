@@ -1,0 +1,10 @@
+---
+#installing xCAT
+link: "https://raw.githubusercontent.com/xcat2/xcat-core/master/xCAT-server/share/xcat/tools/go-xcat -O - >/tmp/go-xcat"
+
+#node setting
+node_id: "nn1"
+node_ip: "192.168.255.161"
+node_mac: "00:0C:29:C8:EA:90"
+node_group: "all,x86_64"
+node_netboot: "xnba"

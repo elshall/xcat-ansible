@@ -1,0 +1,13 @@
+---
+#the hostname
+hostname: "xcatmn.mynewdomain.com"
+
+#the network configurations
+networking:
+  ip: "192.168.255.145/24"
+  dns: "8.8.8.8"
+  ifname: "ens160"
+  gateway: "192.168.255.2"
+  con_name: "ens160"
+
+

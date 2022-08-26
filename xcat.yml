@@ -1,0 +1,133 @@
+---
+- name: apply xcat with ansible 
+  hosts: all
+  vars:
+          flag: 0
+  
+  tasks:
+#  - name: selinux disable
+#    selinux:
+#      state: disabled
+
+  - name: Disable SELinux
+    ansible.builtin.lineinfile:      
+      path: /etc/selinux/config
+      regexp: '^SELINUX='
+      line: SELINUX=disable
+
+
+  - name: setting the hostname
+    hostname:
+      name: xcatmn.mynewdomain.com
+
+
+#  - name: replace content
+#    copy:
+#      src: /root/new_network_scripts
+#      dest: /root/etc/sysconfig/network-scripts/ifcfg-ens160
+
+  - name: setting the ip static
+    community.general.nmcli:
+      type: ethernet
+      conn_name: ens160
+      ip4: "192.168.255.145/24"      
+      gw4: "192.168.255.2"
+      dns4: "8.8.8.8"
+      ifname: ens160 
+      state: present   
+
+#  - name: update the resolv.conf file
+#    ansible.builtin.lineinfile:     
+#      path: /etc/resolve.conf
+#      regexp: '^nameserver'
+#      line: nameserver 8.8.8.8
+#      create: yes
+
+#  - name: update the resolv.conf file2
+#    ansible.builtin.lineinfile:
+#      path: /etc/resolve.conf
+#      regexp: '^search'
+#      line: search mynewdomain.com
+#      create: yes
+   
+
+  - name: update the etc/hosts file
+    ansible.builtin.lineinfile: 
+      path: /etc/hosts
+      line: 192.168.255.145 xcatmn xcatmn.mynewadmin.com
+      create: yes
+
+  - name: systemctl restart
+    shell: systemctl restart NetworkManager
+  
+ 
+#  - name: osimage copy to the ssh machine
+#    copy:
+#            src: /tmp/CentOS-Stream-8-x86_64-latest-boot.iso
+#            dest: /tmp
+
+  - name: wget the xcat        
+    shell: wget https://raw.githubusercontent.com/xcat2/xcat-core/master/xCAT-server/share/xcat/tools/go-xcat -O - >/tmp/go-xcat
+ 
+  - name: make the file excutable
+  - name: wget the xcat
+    shell: wget https://raw.githubusercontent.com/xcat2/xcat-core/master/xCAT-server/share/xcat/tools/go-xcat -O - >/tmp/go-xcat
+
+  - name: make the file excutable
+    shell:
+            chmod +x /tmp/go-xcat
+    shell:
+            chmod +x /tmp/go-xcat
+
+  - name: go-xcat tools
+    shell: |
+            /tmp/go-xcat --yes install
+            source /etc/profile.d/xcat.sh
+            /tmp/go-xcat -x devel --yes install
+    when: flag==1   
+
+  - name: node credentials 
+    shell: chtab key=system passwd.username=root passwd.password=abc123
+
+  - name: the osimage copy for disck full
+    shell: copycds /tmp/CentOS-Stream-8-x86_64-20220513-dvd1.iso
+    when: flag==1
+
+  - name: generat the image
+    shell: genimage centos-stream8-x86_64-netboot-compute
+    when: flag==1
+
+  - name: package image
+    shell: packimage centos-stream8-x86_64-netboot-compute
+    when: flag==1
+
+
+ ###############################################################################################################
+
+  - name: DHCP setup
+    shell: chdef -t site dhcprinterfaces=ens160
+
+#  - name: setting node
+#    shell: mkdef -t node -o nn1 arch=x86_64 ip="192.168.255.161" mac=00:0C:29:C8:EA:90" netboot="xnba" group="all"
+
+#  - name: make new network
+#    shell: makenetworks
+
+#  - name: make the DHCP range
+#    shell: chdef -t network 192_168_255_145-255_255_255_0 dynamicrange="192.168.255.2-192.168.255.160"
+
+  - name: node create
+    shell: mkdef -t node -f nn1 arch=x86_64 ip=192.168.255.161 mac=00:0C:29:C8:EA:90 netboot=xnba groups=all,x86_64
+
+  - name: start the dhcp service
+    shell: |
+            makehosts nn1
+
+
+  - name: update the DHCP configuration file
+    shell: |
+            makedhcp -n 
+            makedhcp -a 
+
+  - name: the node setting
+    shell: nodeset nn1 osimage=centos-stream8-x86_64-netboot-compute

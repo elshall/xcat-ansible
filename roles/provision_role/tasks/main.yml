@@ -1,0 +1,56 @@
+---
+- name: wget the xcat
+  shell: wget {{ link }}
+
+- name: make the file excutable
+  shell: chmod +x /tmp/go-xcat
+
+#start the running the xcat 
+- name: go-xcat tools
+  shell: |
+          /tmp/go-xcat --yes install
+          source /etc/profile.d/xcat.sh
+          /tmp/go-xcat -x devel --yes install
+  when: flag==1
+
+#setting the node credentials
+- name: node credentials
+  shell: chtab key=system passwd.username=root passwd.password=abc123
+
+#copying the osimage from dest
+- name: the osimage copy for disckless
+  shell: copycds /tmp/CentOS-Stream-8-x86_64-20220513-dvd1.iso
+  when: flag==1
+
+#image generation for the deskless installation
+- name: generat the image
+  shell: genimage centos-stream8-x86_64-netboot-compute
+  when: flag==1
+
+- name: package image
+  shell: packimage centos-stream8-x86_64-netboot-compute
+  when: flag==1
+
+
+ ###############################################################################################################
+
+#initializing  the DHCP service for ip pulling 
+- name: DHCP setup
+  shell: chdef -t site dhcprinterfaces=ens160
+
+#creating the node 
+- name: node create
+  shell: mkdef -t node -f {{ node_id }} arch=x86_64 ip={{ node_ip }} mac={{ node mac }} netboot={{ node_netboot }} groups={{ node_group }}
+
+- name: start the dhcp service
+  shell: |
+          makehosts {{ node_id }}
+
+#DHCP configuration file with the network def
+- name: update the DHCP configuration file
+  shell: |     
+          makedhcp -n 
+          makedhcp -a
+#adding image definition to compute nodes
+- name: the node setting
+  shell: nodeset nn1 osimage=centos-stream8-x86_64-netboot-compute

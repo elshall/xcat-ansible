@@ -1,0 +1,50 @@
+---
+#Disable the selinux
+- name: Disable SELinux
+  ansible.builtin.lineinfile:      
+    path: /etc/selinux/config
+    regexp: '^SELINUX='
+    line: SELINUX=disable
+
+#setting the hostname
+- name: setting the hostname
+  hostname:
+    name: xcatmn.mynewdomain.com
+
+#master network configuration
+- name: setting the ip static
+  community.general.nmcli:
+    type: ethernet 
+    conn_name: "{{ con_name }}"
+    ip4: "{{ ip }}"      
+    gw4: "{{ gateway }}"
+    dns4: "{{ dns }}"
+    ifname: "{{ ifname }}"
+    state: present
+    notify: Restart network   
+
+#  - name: update the resolv.conf file2
+#   asansible.builtin.lineinfile:
+#      path: /etc/resolve.conf
+#      regexp: '^search'
+#      line: search mynewdomain.com
+#      create: yes
+   
+#master etc/hosts configuration
+- name: update the etc/hosts file
+  ansible.builtin.lineinfile: 
+    path: /etc/hosts
+    line: 192.168.255.145 xcatmn xcatmn.mynewadmin.com
+    create: yes
+    notify: Restart firewall
+ 
+#restarting the network service 
+- name: systemctl restart
+  shell: systemctl restart NetworkManager
+
+#setting packages and dependencies for xcat
+#- name: wget the xcat
+#  shell: wget https://raw.githubusercontent.com/xcat2/xcat-core/master/xCAT-server/share/xcat/tools/go-xcat -O - >/tmp/go-xcat
+
+#- name: make the file excutable
+#  shell: chmod +x /tmp/go-xcat
